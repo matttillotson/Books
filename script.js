@@ -140,6 +140,7 @@ class BookTracker {
         modal.className = 'modal';
         modal.innerHTML = `
             <div class="modal-content">
+                <button class="close-modal" onclick="this.closest('.modal').remove()">×</button>
                 <h2>Select a Book</h2>
                 <div class="book-selection">
                     ${books.map((book, index) => `
@@ -271,6 +272,7 @@ class BookTracker {
         modal.className = 'modal';
         modal.innerHTML = `
             <div class="modal-content book-details-modal">
+                <button class="close-modal" onclick="this.closest('.modal').remove()">×</button>
                 <div class="book-header">
                     <img src="${book.coverUrl}" alt="${book.title} cover">
                     <div>
@@ -342,7 +344,7 @@ class BookTracker {
     makeEditable(element) {
         const field = element.dataset.field;
         const id = element.dataset.id;
-        const book = this.books.find(b => b.id === parseInt(id));
+        const book = this.books.find(b => b.id === id);
         const currentValue = field === 'author' ? 
             book[field].replace('By: ', '') : 
             field === 'subject' ? 
@@ -378,12 +380,19 @@ class BookTracker {
         input.select();
     }
 
-    saveEdit(id, field, value) {
-        const book = this.books.find(b => b.id === parseInt(id));
+    async saveEdit(id, field, value) {
+        const book = this.books.find(b => b.id === id);
         if (book) {
             book[field] = value;
-            this.saveToLocalStorage();
-            this.renderBooks();
+            try {
+                await db.collection('books').doc(id).update({
+                    [field]: value
+                });
+                this.renderBooks();
+            } catch (error) {
+                this.showError('Error saving changes');
+                this.renderBooks(); // Revert changes on error
+            }
         }
     }
 
