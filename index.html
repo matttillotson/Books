@@ -3,12 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Project</title>
+    <title>Books To Be Read</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to My Project</h1>
+        <h1>Books To Be Read</h1>
+        
+        <form id="bookForm" class="book-form">
+            <input 
+                type="text" 
+                id="bookTitle" 
+                placeholder="Enter book title"
+                required
+            >
+            <button type="submit">Add Book</button>
+        </form>
+
+        <div class="controls">
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="searchBooks" 
+                    placeholder="Search your books..."
+                >
+            </div>
+            <div class="sort-section">
+                <label>Sort by:</label>
+                <select id="sortBooks">
+                    <option value="title">Title</option>
+                    <option value="author">Author</option>
+                    <option value="subject">Subject</option>
+                    <option value="addedDate">Date Added</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="bookList" class="book-list">
+            <!-- Books will be added here dynamically -->
+        </div>
     </div>
     
     <script src="script.js"></script>

@@ -2,3 +2,372 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log('JavaScript is loaded and running!');
 });
+
+class BookTracker {
+    constructor() {
+        this.books = this.migrateData(JSON.parse(localStorage.getItem('books')) || []);
+        this.form = document.getElementById('bookForm');
+        this.bookList = document.getElementById('bookList');
+        this.sortSelect = document.getElementById('sortBooks');
+        this.searchInput = document.getElementById('searchBooks');
+        
+        this.initializeEventListeners();
+        this.renderBooks();
+    }
+
+    migrateData(books) {
+        return books.map(book => ({
+            id: book.id,
+            title: book.title,
+            author: book.author,
+            subject: book.subject,
+            coverUrl: book.coverUrl,
+            isRead: book.isRead,
+            description: book.description || 'No description available',
+            rating: book.rating || 0,
+            review: book.review || '',
+            addedDate: book.addedDate || new Date().toISOString()
+        }));
+    }
+
+    initializeEventListeners() {
+        this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+        this.sortSelect.addEventListener('change', () => this.renderBooks());
+        this.searchInput.addEventListener('input', () => this.renderBooks());
+    }
+
+    async handleSubmit(e) {
+        e.preventDefault();
+        const title = document.getElementById('bookTitle').value;
+        const submitButton = this.form.querySelector('button');
+        
+        try {
+            submitButton.disabled = true;
+            submitButton.innerHTML = 'Searching...';
+            
+            const books = await this.searchBooks(title);
+            if (books.length > 1) {
+                this.showBookSelection(books);
+            } else if (books.length === 1) {
+                this.addBook(books[0]);
+            }
+            this.form.reset();
+        } catch (error) {
+            this.showError(error.message);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Add Book';
+        }
+    }
+
+    async searchBooks(title) {
+        console.log('Searching for:', title);
+        const response = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=5`
+        );
+
+        if (!response.ok) {
+            console.error('API response not ok:', response.status);
+            throw new Error('Failed to fetch book data');
+        }
+
+        const data = await response.json();
+        console.log('API response:', data);
+        
+        if (!data.items || data.items.length === 0) {
+            throw new Error('No books found with that title');
+        }
+
+        const books = data.items.map(item => ({
+            title: item.volumeInfo.title,
+            author: item.volumeInfo.authors?.[0] || 'Unknown Author',
+            subject: item.volumeInfo.categories?.[0] || 'Uncategorized',
+            coverUrl: item.volumeInfo.imageLinks?.thumbnail || 'https://via.placeholder.com/200x300?text=No+Cover',
+            description: item.volumeInfo.description || 'No description available'
+        }));
+        
+        console.log('Processed books:', books);
+        return books;
+    }
+
+    showBookSelection(books) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h2>Select a Book</h2>
+                <div class="book-selection">
+                    ${books.map((book, index) => `
+                        <div class="book-option" onclick="bookTracker.selectBook(${index})">
+                            <img src="${book.coverUrl}" alt="${book.title} cover">
+                            <div class="book-details">
+                                <h3>${book.title}</h3>
+                                <p>By: ${book.author}</p>
+                                <p class="description">${book.description.substring(0, 150)}...</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <button onclick="this.closest('.modal').remove()">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        this._currentSearchResults = books;
+    }
+
+    selectBook(index) {
+        const book = this._currentSearchResults[index];
+        this.addBook(book);
+        document.querySelector('.modal').remove();
+    }
+
+    addBook(bookData) {
+        const book = {
+            id: Date.now(),
+            addedDate: new Date().toISOString(),
+            ...bookData,
+            isRead: false
+        };
+        
+        this.books.push(book);
+        this.saveToLocalStorage();
+        this.renderBooks();
+    }
+
+    toggleReadStatus(id) {
+        const book = this.books.find(book => book.id === id);
+        if (book) {
+            book.isRead = !book.isRead;
+            this.saveToLocalStorage();
+            this.renderBooks();
+        }
+    }
+
+    saveToLocalStorage() {
+        localStorage.setItem('books', JSON.stringify(this.books));
+    }
+
+    sortBooks() {
+        const sortBy = this.sortSelect.value;
+        return [...this.books].sort((a, b) => {
+            if (sortBy === 'addedDate') {
+                return new Date(b.addedDate) - new Date(a.addedDate);
+            }
+            return a[sortBy].localeCompare(b[sortBy]);
+        });
+    }
+
+    filterBooks(books) {
+        const searchTerm = this.searchInput.value.toLowerCase();
+        if (!searchTerm) return books;
+
+        return books.filter(book => 
+            book.title.toLowerCase().includes(searchTerm) ||
+            book.author.toLowerCase().includes(searchTerm) ||
+            book.subject.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    renderBooks() {
+        let displayBooks = this.sortBooks();
+        displayBooks = this.filterBooks(displayBooks);
+        
+        this.bookList.innerHTML = displayBooks.map(book => `
+            <div class="book-card ${book.isRead ? 'read' : ''}">
+                <button 
+                    class="delete-btn" 
+                    onclick="bookTracker.deleteBook(${book.id})"
+                    title="Delete book"
+                >×</button>
+                <img src="${book.coverUrl}" alt="${book.title} cover">
+                <div class="editable" 
+                     onclick="bookTracker.makeEditable(this)" 
+                     data-field="title" 
+                     data-id="${book.id}">
+                    <h3>${book.title}</h3>
+                </div>
+                <div class="editable" 
+                     onclick="bookTracker.makeEditable(this)" 
+                     data-field="author" 
+                     data-id="${book.id}">
+                    <p>By: ${book.author}</p>
+                </div>
+                <div class="editable" 
+                     onclick="bookTracker.makeEditable(this)" 
+                     data-field="subject" 
+                     data-id="${book.id}">
+                    <p>Subject: ${book.subject}</p>
+                </div>
+                <p class="added-date">Added: ${this.formatDate(book.addedDate)}</p>
+                <button 
+                    class="view-details-btn"
+                    onclick="bookTracker.showBookDetails(${book.id})"
+                >View Details</button>
+                <label class="book-status">
+                    <input type="checkbox" 
+                           ${book.isRead ? 'checked' : ''} 
+                           onchange="bookTracker.toggleReadStatus(${book.id})">
+                    Finished
+                </label>
+            </div>
+        `).join('');
+
+        if (displayBooks.length === 0) {
+            this.bookList.innerHTML = `
+                <div class="no-results">
+                    No books found matching your search.
+                </div>`;
+        }
+    }
+
+    showError(message) {
+        const existingError = document.querySelector('.error-message');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        const error = document.createElement('div');
+        error.className = 'error-message';
+        error.textContent = message;
+        this.form.appendChild(error);
+
+        setTimeout(() => error.remove(), 5000);
+    }
+
+    deleteBook(id) {
+        this.books = this.books.filter(book => book.id !== id);
+        this.saveToLocalStorage();
+        this.renderBooks();
+    }
+
+    showBookDetails(id) {
+        const book = this.books.find(book => book.id === id);
+        if (!book) return;
+
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content book-details-modal">
+                <div class="book-header">
+                    <img src="${book.coverUrl}" alt="${book.title} cover">
+                    <div>
+                        <h2>${book.title}</h2>
+                        <p class="author">By: ${book.author}</p>
+                        <p class="subject">Subject: ${book.subject}</p>
+                        <div class="rating-container">
+                            ${this.generateRatingStars(book.rating || 0)}
+                        </div>
+                    </div>
+                </div>
+                <div class="book-body">
+                    <h3>Description</h3>
+                    <p>${book.description}</p>
+                    <div class="review-section">
+                        <h3>Your Review</h3>
+                        <textarea
+                            id="reviewText"
+                            placeholder="Write your review here..."
+                        >${book.review || ''}</textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button onclick="bookTracker.saveBookDetails(${book.id})">Save</button>
+                    <button onclick="this.closest('.modal').remove()">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Set up rating functionality
+        const stars = modal.querySelectorAll('.star');
+        stars.forEach((star, index) => {
+            star.addEventListener('click', () => this.setRating(stars, index + 1));
+        });
+    }
+
+    generateRatingStars(rating) {
+        return `
+            <div class="stars">
+                ${Array.from({ length: 5 }, (_, i) => `
+                    <span class="star ${i < rating ? 'filled' : ''}" data-rating="${i + 1}">★</span>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    setRating(stars, rating) {
+        stars.forEach((star, index) => {
+            star.classList.toggle('filled', index < rating);
+        });
+    }
+
+    saveBookDetails(id) {
+        const book = this.books.find(book => book.id === id);
+        if (!book) return;
+
+        const modal = document.querySelector('.modal');
+        const rating = modal.querySelectorAll('.star.filled').length;
+        const review = modal.querySelector('#reviewText').value;
+
+        book.rating = rating;
+        book.review = review;
+        this.saveToLocalStorage();
+        this.renderBooks();
+        modal.remove();
+    }
+
+    makeEditable(element) {
+        const field = element.dataset.field;
+        const id = element.dataset.id;
+        const book = this.books.find(b => b.id === parseInt(id));
+        const currentValue = field === 'author' ? 
+            book[field].replace('By: ', '') : 
+            field === 'subject' ? 
+                book[field].replace('Subject: ', '') : 
+                book[field];
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentValue;
+        input.className = 'inline-edit';
+        
+        // Save on enter key
+        input.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                this.saveEdit(id, field, input.value);
+                input.blur();
+            }
+            // Cancel on escape key
+            if (e.key === 'Escape') {
+                this.renderBooks();
+            }
+        });
+
+        // Save on blur (when clicking away)
+        input.addEventListener('blur', () => {
+            this.saveEdit(id, field, input.value);
+        });
+
+        // Clear the element and add the input
+        element.innerHTML = '';
+        element.appendChild(input);
+        input.focus();
+        input.select();
+    }
+
+    saveEdit(id, field, value) {
+        const book = this.books.find(b => b.id === parseInt(id));
+        if (book) {
+            book[field] = value;
+            this.saveToLocalStorage();
+            this.renderBooks();
+        }
+    }
+
+    formatDate(dateString) {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    }
+}
+
+const bookTracker = new BookTracker();
