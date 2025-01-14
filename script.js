@@ -39,19 +39,27 @@ class BookTracker {
         document.getElementById('signInBtn').onclick = async () => {
             try {
                 console.log('Sign in button clicked');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.setCustomParameters({
+                    prompt: 'select_account'
+                });
                 const result = await auth.signInWithPopup(provider);
                 console.log('Sign in successful:', result.user);
             } catch (error) {
                 console.error('Sign in error:', error);
-                this.showError('Error signing in: ' + error.message);
+                this.showError(`Error signing in: ${error.message}`);
             }
         };
         document.getElementById('signOutBtn').onclick = () => auth.signOut();
     }
 
     async loadBooksFromFirebase() {
-        if (!this.userId) return;
+        if (!this.userId) {
+            console.log('No user ID available, skipping load');
+            return;
+        }
         try {
+            console.log('Loading books for user:', this.userId);
             const snapshot = await db.collection('users')
                 .doc(this.userId)
                 .collection('books')
@@ -60,9 +68,11 @@ class BookTracker {
                 id: doc.id,
                 ...doc.data()
             }));
+            console.log('Successfully loaded books:', this.books);
             this.renderBooks();
         } catch (error) {
-            this.showError('Error loading books');
+            console.error('Error loading books:', error);
+            this.showError(`Error loading books: ${error.message}`);
         }
     }
 

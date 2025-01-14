@@ -12,10 +12,14 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
-const provider = new firebase.auth.GoogleAuthProvider();
 
-// Add some debugging
-console.log('Firebase initialized');
+// Enable persistence
+db.enablePersistence()
+    .catch((err) => {
+        console.error('Firebase persistence error:', err);
+    });
+
+console.log('Firebase initialized with auth:', !!auth);
 auth.onAuthStateChanged(user => {
-    console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
+    console.log('Auth state changed:', user ? `User ${user.uid} logged in` : 'User logged out');
 }); 
