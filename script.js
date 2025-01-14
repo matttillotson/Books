@@ -22,8 +22,10 @@ class BookTracker {
                 id: doc.id,
                 ...doc.data()
             }));
+            console.log('Loaded books from Firebase:', this.books);
             this.renderBooks();
         } catch (error) {
+            console.error('Error loading books:', error);
             this.showError('Error loading books');
         }
     }
@@ -202,6 +204,7 @@ class BookTracker {
         let displayBooks = this.sortBooks();
         displayBooks = this.filterBooks(displayBooks);
         
+        console.log('Rendering books:', displayBooks);
         this.bookList.innerHTML = displayBooks.map(book => `
             <div class="book-card ${book.isRead ? 'read' : ''}">
                 <button 
@@ -265,11 +268,13 @@ class BookTracker {
     }
 
     showBookDetails(id) {
+        console.log('Showing details for book:', id);
         const book = this.books.find(book => book.id === id);
         if (!book) {
             console.error('Book not found:', id);
             return;
         }
+        console.log('Found book:', book);
 
         const modal = document.createElement('div');
         modal.className = 'modal';
