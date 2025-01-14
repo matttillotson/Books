@@ -99,34 +99,18 @@ h1 {
 }
 
 .book-card.read {
-    position: relative;
-}
-
-.book-card.read::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(245, 245, 245, 0.1);
-    pointer-events: none;
-}
-
-.book-card.read .book-status,
-.book-card.read .view-details-btn,
-.book-card.read .delete-btn {
-    position: relative;
-    z-index: 1;
+    background: #fdfdfd;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #f0f0f0;
 }
 
 .book-card.read img {
-    opacity: 0.95;
+    opacity: 0.85;
 }
 
 .book-card.read h3,
 .book-card.read p:not(.added-date) {
-    color: #666;
+    color: #777;
 }
 
 .book-card img {
