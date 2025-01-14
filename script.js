@@ -5,29 +5,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
 class BookTracker {
     constructor() {
-        this.books = this.migrateData(JSON.parse(localStorage.getItem('books')) || []);
+        this.books = [];
         this.form = document.getElementById('bookForm');
         this.bookList = document.getElementById('bookList');
         this.sortSelect = document.getElementById('sortBooks');
         this.searchInput = document.getElementById('searchBooks');
         
         this.initializeEventListeners();
-        this.renderBooks();
+        this.loadBooksFromFirebase();
     }
 
-    migrateData(books) {
-        return books.map(book => ({
-            id: book.id,
-            title: book.title,
-            author: book.author,
-            subject: book.subject,
-            coverUrl: book.coverUrl,
-            isRead: book.isRead,
-            description: book.description || 'No description available',
-            rating: book.rating || 0,
-            review: book.review || '',
-            addedDate: book.addedDate || new Date().toISOString()
-        }));
+    async loadBooksFromFirebase() {
+        try {
+            const snapshot = await db.collection('books').get();
+            this.books = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            this.renderBooks();
+        } catch (error) {
+            this.showError('Error loading books');
+        }
+    }
+
+    async addBook(bookData) {
+        try {
+            const docRef = await db.collection('books').add({
+                ...bookData,
+                addedDate: new Date().toISOString(),
+                isRead: false
+            });
+            
+            const book = {
+                id: docRef.id,
+                ...bookData,
+                addedDate: new Date().toISOString(),
+                isRead: false
+            };
+            
+            this.books.push(book);
+            this.renderBooks();
+        } catch (error) {
+            this.showError('Error adding book');
+        }
+    }
+
+    async toggleReadStatus(id) {
+        try {
+            const book = this.books.find(book => book.id === id);
+            if (book) {
+                book.isRead = !book.isRead;
+                await db.collection('books').doc(id).update({
+                    isRead: book.isRead
+                });
+                this.renderBooks();
+            }
+        } catch (error) {
+            this.showError('Error updating book status');
+        }
+    }
+
+    async deleteBook(id) {
+        try {
+            await db.collection('books').doc(id).delete();
+            this.books = this.books.filter(book => book.id !== id);
+            this.renderBooks();
+        } catch (error) {
+            this.showError('Error deleting book');
+        }
     }
 
     initializeEventListeners() {
@@ -121,30 +166,14 @@ class BookTracker {
         document.querySelector('.modal').remove();
     }
 
-    addBook(bookData) {
-        const book = {
-            id: Date.now(),
-            addedDate: new Date().toISOString(),
-            ...bookData,
-            isRead: false
-        };
-        
-        this.books.push(book);
-        this.saveToLocalStorage();
-        this.renderBooks();
-    }
-
-    toggleReadStatus(id) {
-        const book = this.books.find(book => book.id === id);
-        if (book) {
-            book.isRead = !book.isRead;
-            this.saveToLocalStorage();
-            this.renderBooks();
+    async saveToLocalStorage() {
+        try {
+            await db.collection('books').add({
+                books: JSON.stringify(this.books)
+            });
+        } catch (error) {
+            this.showError('Error saving books');
         }
-    }
-
-    saveToLocalStorage() {
-        localStorage.setItem('books', JSON.stringify(this.books));
     }
 
     sortBooks() {
@@ -232,12 +261,6 @@ class BookTracker {
         this.form.appendChild(error);
 
         setTimeout(() => error.remove(), 5000);
-    }
-
-    deleteBook(id) {
-        this.books = this.books.filter(book => book.id !== id);
-        this.saveToLocalStorage();
-        this.renderBooks();
     }
 
     showBookDetails(id) {
@@ -367,6 +390,29 @@ class BookTracker {
     formatDate(dateString) {
         const options = { year: 'numeric', month: 'short', day: 'numeric' };
         return new Date(dateString).toLocaleDateString(undefined, options);
+    }
+
+    exportBooks() {
+        const data = JSON.stringify(this.books);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'my-books.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async importBooks(file) {
+        try {
+            const text = await file.text();
+            const books = JSON.parse(text);
+            this.books = books;
+            this.saveToLocalStorage();
+            this.renderBooks();
+        } catch (error) {
+            this.showError('Error importing books');
+        }
     }
 }
 
