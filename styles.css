@@ -422,9 +422,12 @@ textarea#reviewText {
 
 .auth-container {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     padding: 1rem;
-    gap: 1rem;
+    gap: 2rem;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .auth-btn {
@@ -434,6 +437,9 @@ textarea#reviewText {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .auth-btn:hover {
@@ -443,11 +449,24 @@ textarea#reviewText {
 #userDetails {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 1rem;
+    background: #f5f5f5;
+    padding: 0.75rem;
+    border-radius: 4px;
+    min-width: 200px;
 }
 
 #userDetails img {
     width: 32px;
     height: 32px;
     border-radius: 50%;
+    object-fit: cover;
+}
+
+#userDetails span {
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
