@@ -266,7 +266,10 @@ class BookTracker {
 
     showBookDetails(id) {
         const book = this.books.find(book => book.id === id);
-        if (!book) return;
+        if (!book) {
+            console.error('Book not found:', id);
+            return;
+        }
 
         const modal = document.createElement('div');
         modal.className = 'modal';
@@ -286,7 +289,7 @@ class BookTracker {
                 </div>
                 <div class="book-body">
                     <h3>Description</h3>
-                    <p>${book.description}</p>
+                    <p>${book.description || 'No description available'}</p>
                     <div class="review-section">
                         <h3>Your Review</h3>
                         <textarea
@@ -296,7 +299,7 @@ class BookTracker {
                     </div>
                 </div>
                 <div class="modal-actions">
-                    <button onclick="bookTracker.saveBookDetails(${book.id})">Save</button>
+                    <button onclick="bookTracker.saveBookDetails('${id}')">Save</button>
                     <button onclick="this.closest('.modal').remove()">Close</button>
                 </div>
             </div>
@@ -326,7 +329,7 @@ class BookTracker {
         });
     }
 
-    saveBookDetails(id) {
+    async saveBookDetails(id) {
         const book = this.books.find(book => book.id === id);
         if (!book) return;
 
@@ -334,11 +337,22 @@ class BookTracker {
         const rating = modal.querySelectorAll('.star.filled').length;
         const review = modal.querySelector('#reviewText').value;
 
-        book.rating = rating;
-        book.review = review;
-        this.saveToLocalStorage();
-        this.renderBooks();
-        modal.remove();
+        try {
+            // Update Firebase first
+            await db.collection('books').doc(id).update({
+                rating: rating,
+                review: review
+            });
+            
+            // Then update local state
+            book.rating = rating;
+            book.review = review;
+            this.renderBooks();
+            modal.remove();
+        } catch (error) {
+            console.error('Error saving book details:', error);
+            this.showError('Error saving book details');
+        }
     }
 
     makeEditable(element) {
