@@ -111,31 +111,34 @@ class BookTracker {
 
     async toggleReadStatus(id) {
         try {
-            // Convert string ID to string if it's not already
             const bookId = String(id);
             console.log('Toggling read status for book:', bookId);
             
             const book = this.books.find(book => String(book.id) === bookId);
-            if (book) {
-                book.isRead = !book.isRead;
-                console.log('New read status:', book.isRead);
-                
-                await db.collection('users')
-                    .doc(this.userId)
-                    .collection('books')
-                    .doc(bookId)
-                    .update({
-                        isRead: book.isRead
-                    });
-                
-                // Force immediate UI update
-                const bookCard = document.querySelector(`.book-card[data-id="${bookId}"]`);
-                if (bookCard) {
-                    bookCard.classList.toggle('read', book.isRead);
-                }
-                
-                this.renderBooks();
+            if (!book) {
+                console.error('Book not found:', bookId);
+                return;
             }
+
+            const newStatus = !book.isRead;
+            console.log('Setting read status to:', newStatus);
+
+            // Update Firebase first
+            await db.collection('users')
+                .doc(this.userId)
+                .collection('books')
+                .doc(bookId)
+                .update({
+                    isRead: newStatus
+                });
+
+            // Update local state
+            book.isRead = newStatus;
+
+            // Force a complete re-render
+            this.renderBooks();
+            
+            console.log('Updated book:', book);
         } catch (error) {
             console.error('Error updating read status:', error);
             this.showError('Error updating book status');
@@ -283,49 +286,50 @@ class BookTracker {
         let displayBooks = this.sortBooks();
         displayBooks = this.filterBooks(displayBooks);
         
-        this.bookList.innerHTML = displayBooks.map(book => `
-            <div class="book-card ${book.isRead ? 'read' : ''}" data-id="${book.id}">
-                <button 
-                    class="delete-btn" 
-                    onclick="bookTracker.deleteBook(${book.id})"
-                    title="Delete book"
-                >×</button>
-                <img src="${book.coverUrl}" alt="${book.title} cover">
-                <div class="editable" 
-                     onclick="bookTracker.makeEditable(this)" 
-                     data-field="title" 
-                     data-id="${book.id}">
-                    <h3>${book.title}</h3>
+        this.bookList.innerHTML = displayBooks.map(book => {
+            // Ensure ID is a string
+            const bookId = String(book.id);
+            return `
+                <div class="book-card ${book.isRead ? 'read' : ''}" data-id="${bookId}">
+                    <button 
+                        class="delete-btn" 
+                        onclick="bookTracker.deleteBook('${bookId}')"
+                        title="Delete book"
+                    >×</button>
+                    <img src="${book.coverUrl}" alt="${book.title} cover">
+                    <div class="editable" 
+                         onclick="bookTracker.makeEditable(this)" 
+                         data-field="title" 
+                         data-id="${bookId}">
+                        <h3>${book.title}</h3>
+                    </div>
+                    <div class="editable" 
+                         onclick="bookTracker.makeEditable(this)" 
+                         data-field="author" 
+                         data-id="${bookId}">
+                        <p>By: ${book.author}</p>
+                    </div>
+                    <div class="editable" 
+                         onclick="bookTracker.makeEditable(this)" 
+                         data-field="subject" 
+                         data-id="${bookId}">
+                        <p>Subject: ${book.subject}</p>
+                    </div>
+                    <p class="added-date">Added: ${this.formatDate(book.addedDate)}</p>
+                    <button 
+                        class="view-details-btn"
+                        onclick="bookTracker.showBookDetails('${bookId}')"
+                    >View Details</button>
+                    <label class="book-status">
+                        <input type="checkbox" 
+                            ${book.isRead ? 'checked' : ''} 
+                            onchange="bookTracker.toggleReadStatus('${bookId}')"
+                        >
+                        Finished
+                    </label>
                 </div>
-                <div class="editable" 
-                     onclick="bookTracker.makeEditable(this)" 
-                     data-field="author" 
-                     data-id="${book.id}">
-                    <p>By: ${book.author}</p>
-                </div>
-                <div class="editable" 
-                     onclick="bookTracker.makeEditable(this)" 
-                     data-field="subject" 
-                     data-id="${book.id}">
-                    <p>Subject: ${book.subject}</p>
-                </div>
-                <p class="added-date">Added: ${this.formatDate(book.addedDate)}</p>
-                <button 
-                    class="view-details-btn"
-                    onclick="bookTracker.showBookDetails('${book.id}')"
-                >View Details</button>
-                <label class="book-status">
-                    <input type="checkbox" 
-                        ${book.isRead ? 'checked' : ''} 
-                        onchange="bookTracker.toggleReadStatus('${book.id}')"
-                    >
-                    Finished
-                </label>
-            </div>
-        `).join('');
-        
-        // Log for debugging
-        console.log('Rendered books:', displayBooks.map(b => ({id: b.id, isRead: b.isRead})));
+            `;
+        }).join('');
 
         if (displayBooks.length === 0) {
             this.bookList.innerHTML = `
