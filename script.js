@@ -39,12 +39,16 @@ class BookTracker {
         document.getElementById('signInBtn').onclick = async () => {
             try {
                 console.log('Sign in button clicked');
-                const provider = new firebase.auth.GoogleAuthProvider();
-                provider.setCustomParameters({
-                    prompt: 'select_account'
-                });
-                const result = await auth.signInWithPopup(provider);
+                const result = await auth.signInWithPopup(googleProvider);
                 console.log('Sign in successful:', result.user);
+                
+                // Initialize user's document in Firestore
+                await db.collection('users').doc(result.user.uid).set({
+                    name: result.user.displayName,
+                    email: result.user.email,
+                    lastLogin: new Date()
+                }, { merge: true });
+                
             } catch (error) {
                 console.error('Sign in error:', error);
                 this.showError(`Error signing in: ${error.message}`);
@@ -107,19 +111,33 @@ class BookTracker {
 
     async toggleReadStatus(id) {
         try {
-            const book = this.books.find(book => book.id === id);
+            // Convert string ID to string if it's not already
+            const bookId = String(id);
+            console.log('Toggling read status for book:', bookId);
+            
+            const book = this.books.find(book => String(book.id) === bookId);
             if (book) {
                 book.isRead = !book.isRead;
+                console.log('New read status:', book.isRead);
+                
                 await db.collection('users')
                     .doc(this.userId)
                     .collection('books')
-                    .doc(id)
+                    .doc(bookId)
                     .update({
                         isRead: book.isRead
                     });
+                
+                // Force immediate UI update
+                const bookCard = document.querySelector(`.book-card[data-id="${bookId}"]`);
+                if (bookCard) {
+                    bookCard.classList.toggle('read', book.isRead);
+                }
+                
                 this.renderBooks();
             }
         } catch (error) {
+            console.error('Error updating read status:', error);
             this.showError('Error updating book status');
         }
     }
@@ -265,9 +283,8 @@ class BookTracker {
         let displayBooks = this.sortBooks();
         displayBooks = this.filterBooks(displayBooks);
         
-        console.log('Rendering books:', displayBooks);
         this.bookList.innerHTML = displayBooks.map(book => `
-            <div class="book-card ${book.isRead ? 'read' : ''}">
+            <div class="book-card ${book.isRead ? 'read' : ''}" data-id="${book.id}">
                 <button 
                     class="delete-btn" 
                     onclick="bookTracker.deleteBook(${book.id})"
@@ -299,12 +316,16 @@ class BookTracker {
                 >View Details</button>
                 <label class="book-status">
                     <input type="checkbox" 
-                           ${book.isRead ? 'checked' : ''} 
-                           onchange="bookTracker.toggleReadStatus(${book.id})">
+                        ${book.isRead ? 'checked' : ''} 
+                        onchange="bookTracker.toggleReadStatus('${book.id}')"
+                    >
                     Finished
                 </label>
             </div>
         `).join('');
+        
+        // Log for debugging
+        console.log('Rendered books:', displayBooks.map(b => ({id: b.id, isRead: b.isRead})));
 
         if (displayBooks.length === 0) {
             this.bookList.innerHTML = `
