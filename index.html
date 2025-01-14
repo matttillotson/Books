@@ -39,19 +39,6 @@
             </div>
         </div>
 
-        <div class="import-export">
-            <button onclick="bookTracker.exportBooks()" class="action-btn">Export Books</button>
-            <label class="action-btn">
-                Import Books
-                <input 
-                    type="file" 
-                    accept=".json" 
-                    style="display: none"
-                    onchange="bookTracker.importBooks(this.files[0])"
-                >
-            </label>
-        </div>
-
         <div id="bookList" class="book-list">
             <!-- Books will be added here dynamically -->
         </div>

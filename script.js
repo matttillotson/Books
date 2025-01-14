@@ -391,29 +391,6 @@ class BookTracker {
         const options = { year: 'numeric', month: 'short', day: 'numeric' };
         return new Date(dateString).toLocaleDateString(undefined, options);
     }
-
-    exportBooks() {
-        const data = JSON.stringify(this.books);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'my-books.json';
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    async importBooks(file) {
-        try {
-            const text = await file.text();
-            const books = JSON.parse(text);
-            this.books = books;
-            this.saveToLocalStorage();
-            this.renderBooks();
-        } catch (error) {
-            this.showError('Error importing books');
-        }
-    }
 }
 
 const bookTracker = new BookTracker();
