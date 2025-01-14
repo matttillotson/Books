@@ -100,21 +100,30 @@ h1 {
 
 .book-card.read {
     background: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .book-card.read img {
-    opacity: 0.92;
+    opacity: 1;
 }
 
 .book-card.read h3,
 .book-card.read p:not(.added-date) {
-    color: #666;
+    color: inherit;
 }
 
 .book-card.read .book-status {
     color: #18453B;
     font-weight: 500;
+}
+
+.book-card.read::before {
+    content: '✓';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: #18453B;
+    font-size: 14px;
 }
 
 .book-card img {
