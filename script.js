@@ -345,11 +345,18 @@ class BookTracker {
         const field = element.dataset.field;
         const id = element.dataset.id;
         const book = this.books.find(b => b.id === id);
-        const currentValue = field === 'author' ? 
-            book[field].replace('By: ', '') : 
-            field === 'subject' ? 
-                book[field].replace('Subject: ', '') : 
-                book[field];
+        
+        if (!book) {
+            console.error('Book not found:', id);
+            return;
+        }
+
+        let currentValue = book[field];
+        if (field === 'author') {
+            currentValue = book[field].replace('By: ', '');
+        } else if (field === 'subject') {
+            currentValue = book[field].replace('Subject: ', '');
+        }
 
         const input = document.createElement('input');
         input.type = 'text';
@@ -381,18 +388,22 @@ class BookTracker {
     }
 
     async saveEdit(id, field, value) {
-        const book = this.books.find(b => b.id === id);
-        if (book) {
-            book[field] = value;
-            try {
-                await db.collection('books').doc(id).update({
-                    [field]: value
-                });
+        try {
+            // First update Firebase
+            await db.collection('books').doc(id).update({
+                [field]: value
+            });
+            
+            // Then update local state
+            const book = this.books.find(b => b.id === id);
+            if (book) {
+                book[field] = value;
                 this.renderBooks();
-            } catch (error) {
-                this.showError('Error saving changes');
-                this.renderBooks(); // Revert changes on error
             }
+        } catch (error) {
+            console.error('Error saving edit:', error);
+            this.showError('Error saving changes');
+            this.renderBooks(); // Revert changes on error
         }
     }
 
