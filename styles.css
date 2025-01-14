@@ -99,18 +99,22 @@ h1 {
 }
 
 .book-card.read {
-    background: #fdfdfd;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    border: 1px solid #f0f0f0;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .book-card.read img {
-    opacity: 0.85;
+    opacity: 0.92;
 }
 
 .book-card.read h3,
 .book-card.read p:not(.added-date) {
-    color: #777;
+    color: #666;
+}
+
+.book-card.read .book-status {
+    color: #18453B;
+    font-weight: 500;
 }
 
 .book-card img {
