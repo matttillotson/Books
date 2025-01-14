@@ -231,7 +231,7 @@ class BookTracker {
                 <p class="added-date">Added: ${this.formatDate(book.addedDate)}</p>
                 <button 
                     class="view-details-btn"
-                    onclick="bookTracker.showBookDetails(${book.id})"
+                    onclick="bookTracker.showBookDetails('${book.id}')"
                 >View Details</button>
                 <label class="book-status">
                     <input type="checkbox" 
