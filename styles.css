@@ -109,7 +109,7 @@ h1 {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(245, 245, 245, 0.4);
+    background: rgba(245, 245, 245, 0.2);
     pointer-events: none;
 }
 
@@ -121,12 +121,12 @@ h1 {
 }
 
 .book-card.read img {
-    opacity: 0.85;
+    opacity: 0.9;
 }
 
 .book-card.read h3,
 .book-card.read p:not(.added-date) {
-    color: #444;
+    color: #555;
 }
 
 .book-card img {
