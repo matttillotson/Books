@@ -13,30 +13,64 @@ class BookTracker {
         
         this.initializeEventListeners();
         this.loadBooksFromFirebase();
+
+        // Add auth state listener
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                this.userId = user.uid;
+                this.loadBooksFromFirebase();
+                document.getElementById('whenSignedIn').hidden = false;
+                document.getElementById('whenSignedOut').hidden = true;
+                document.getElementById('userDetails').innerHTML = `
+                    <img src="${user.photoURL}" alt="${user.displayName}">
+                    <span>${user.displayName}</span>
+                `;
+            } else {
+                this.userId = null;
+                this.books = [];
+                this.renderBooks();
+                document.getElementById('whenSignedIn').hidden = true;
+                document.getElementById('whenSignedOut').hidden = false;
+                document.getElementById('userDetails').innerHTML = '';
+            }
+        });
+
+        // Add auth button listeners
+        document.getElementById('signInBtn').onclick = () => auth.signInWithPopup(provider);
+        document.getElementById('signOutBtn').onclick = () => auth.signOut();
     }
 
     async loadBooksFromFirebase() {
+        if (!this.userId) return;
         try {
-            const snapshot = await db.collection('books').get();
+            const snapshot = await db.collection('users')
+                .doc(this.userId)
+                .collection('books')
+                .get();
             this.books = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            console.log('Loaded books from Firebase:', this.books);
             this.renderBooks();
         } catch (error) {
-            console.error('Error loading books:', error);
             this.showError('Error loading books');
         }
     }
 
     async addBook(bookData) {
+        if (!this.userId) {
+            this.showError('Please sign in to add books');
+            return;
+        }
         try {
-            const docRef = await db.collection('books').add({
-                ...bookData,
-                addedDate: new Date().toISOString(),
-                isRead: false
-            });
+            const docRef = await db.collection('users')
+                .doc(this.userId)
+                .collection('books')
+                .add({
+                    ...bookData,
+                    addedDate: new Date().toISOString(),
+                    isRead: false
+                });
             
             const book = {
                 id: docRef.id,

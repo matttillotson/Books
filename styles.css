@@ -419,3 +419,35 @@ textarea#reviewText {
 .close-modal:hover {
     background: #cc0000;
 }
+
+.auth-container {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem;
+    gap: 1rem;
+}
+
+.auth-btn {
+    padding: 0.5rem 1rem;
+    background-color: #18453B;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.auth-btn:hover {
+    background-color: #123629;
+}
+
+#userDetails {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#userDetails img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}

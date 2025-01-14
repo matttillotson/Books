@@ -8,6 +8,15 @@
 </head>
 <body>
     <div class="container">
+        <div class="auth-container">
+            <div id="whenSignedOut">
+                <button id="signInBtn" class="auth-btn">Sign in with Google</button>
+            </div>
+            <div id="whenSignedIn" hidden>
+                <div id="userDetails"></div>
+                <button id="signOutBtn" class="auth-btn">Sign Out</button>
+            </div>
+        </div>
         <h1>Books To Be Read</h1>
         
         <form id="bookForm" class="book-form">
@@ -47,6 +56,7 @@
     <!-- Firebase scripts first -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
     
     <!-- Then your config -->
     <script src="firebase-config.js"></script>
