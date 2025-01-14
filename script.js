@@ -36,7 +36,16 @@ class BookTracker {
         });
 
         // Add auth button listeners
-        document.getElementById('signInBtn').onclick = () => auth.signInWithPopup(provider);
+        document.getElementById('signInBtn').onclick = async () => {
+            try {
+                console.log('Sign in button clicked');
+                const result = await auth.signInWithPopup(provider);
+                console.log('Sign in successful:', result.user);
+            } catch (error) {
+                console.error('Sign in error:', error);
+                this.showError('Error signing in: ' + error.message);
+            }
+        };
         document.getElementById('signOutBtn').onclick = () => auth.signOut();
     }
 
@@ -91,9 +100,13 @@ class BookTracker {
             const book = this.books.find(book => book.id === id);
             if (book) {
                 book.isRead = !book.isRead;
-                await db.collection('books').doc(id).update({
-                    isRead: book.isRead
-                });
+                await db.collection('users')
+                    .doc(this.userId)
+                    .collection('books')
+                    .doc(id)
+                    .update({
+                        isRead: book.isRead
+                    });
                 this.renderBooks();
             }
         } catch (error) {
@@ -103,7 +116,11 @@ class BookTracker {
 
     async deleteBook(id) {
         try {
-            await db.collection('books').doc(id).delete();
+            await db.collection('users')
+                .doc(this.userId)
+                .collection('books')
+                .doc(id)
+                .delete();
             this.books = this.books.filter(book => book.id !== id);
             this.renderBooks();
         } catch (error) {
@@ -377,13 +394,15 @@ class BookTracker {
         const review = modal.querySelector('#reviewText').value;
 
         try {
-            // Update Firebase first
-            await db.collection('books').doc(id).update({
-                rating: rating,
-                review: review
-            });
+            await db.collection('users')
+                .doc(this.userId)
+                .collection('books')
+                .doc(id)
+                .update({
+                    rating: rating,
+                    review: review
+                });
             
-            // Then update local state
             book.rating = rating;
             book.review = review;
             this.renderBooks();
@@ -442,12 +461,14 @@ class BookTracker {
 
     async saveEdit(id, field, value) {
         try {
-            // First update Firebase
-            await db.collection('books').doc(id).update({
-                [field]: value
-            });
+            await db.collection('users')
+                .doc(this.userId)
+                .collection('books')
+                .doc(id)
+                .update({
+                    [field]: value
+                });
             
-            // Then update local state
             const book = this.books.find(b => b.id === id);
             if (book) {
                 book[field] = value;
@@ -456,7 +477,7 @@ class BookTracker {
         } catch (error) {
             console.error('Error saving edit:', error);
             this.showError('Error saving changes');
-            this.renderBooks(); // Revert changes on error
+            this.renderBooks();
         }
     }
 

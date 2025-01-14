@@ -12,4 +12,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
-const provider = new firebase.auth.GoogleAuthProvider(); 
+const provider = new firebase.auth.GoogleAuthProvider();
+
+// Add some debugging
+console.log('Firebase initialized');
+auth.onAuthStateChanged(user => {
+    console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
+}); 
