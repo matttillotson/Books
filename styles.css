@@ -99,31 +99,31 @@ h1 {
 }
 
 .book-card.read {
-    background: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.book-card.read::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(245, 245, 245, 0.05);
+    pointer-events: none;
 }
 
 .book-card.read img {
-    opacity: 1;
+    opacity: 0.97;
 }
 
 .book-card.read h3,
 .book-card.read p:not(.added-date) {
-    color: inherit;
+    color: #555;
 }
 
 .book-card.read .book-status {
     color: #18453B;
-    font-weight: 500;
-}
-
-.book-card.read::before {
-    content: '✓';
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    color: #18453B;
-    font-size: 14px;
 }
 
 .book-card img {
@@ -514,4 +514,12 @@ textarea#reviewText {
     display: flex;
     align-items: center;
     gap: 1rem;
+}
+
+.book-status input:checked::after {
+    content: '✓';
+    color: #18453B;
+    position: absolute;
+    font-size: 14px;
+    margin-left: 5px;
 }
